@@ -128,6 +128,8 @@ public class WeatherFragment extends Fragment {
         lastUpdated = (TextView) rootView.findViewById(R.id.last_updated_textview);
         icon = (ImageView) rootView.findViewById(R.id.weather_icon_imageview);
 
+        resetViews();
+
         if (((MainActivity) getActivity()).mNumCitiesAdded == 0) {
             determineLocationName();
             retrieveWeather(currentLocation);

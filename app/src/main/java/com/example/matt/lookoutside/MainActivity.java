@@ -54,6 +54,8 @@ public class MainActivity extends ActionBarActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        setupPager();
     }
 
     @Override
@@ -82,6 +84,19 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void setupPager() {
+        mPager = (ViewPager) findViewById(R.id.pager);
+        mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
+        mPager.setAdapter(mPagerAdapter);
+        mWeatherOnPageChangeListener = new WeatherOnPageChangeListener();
+        mPager.setOnPageChangeListener(mWeatherOnPageChangeListener);
+    }
+
+    public void onCityAdded(int aPosition) {
+        mPagerAdapter.addPage(aPosition);
+        mPager.setCurrentItem(mWeatherOnPageChangeListener.getCurrentPage() + 1);
     }
 
     public void refreshInfo() {
@@ -120,6 +135,7 @@ public class MainActivity extends ActionBarActivity {
 
     public void addCity(String aCity) {
         //TODO: Figure out how the hell to do this
+        mNumCitiesAdded++;
     }
 
     public void showPopUpMenu(View aView) {
