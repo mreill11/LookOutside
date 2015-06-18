@@ -1,0 +1,20 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".MainActivity" >
+
+    <item android:id="@+id/action_add_city"
+        app:showAsAction="always"
+        android:title="Add City"
+        android:icon="@drawable/ic_action_add" />
+
+    <item android:id="@+id/action_refresh"
+        app:showAsAction="always"
+        android:title="Refresh"
+        android:icon="@drawable/ic_action_refresh" />
+
+    <item android:id="@+id/action_view_menu"
+        app:showAsAction="always"
+        android:title="My Cities"
+        android:icon="@drawable/ic_action_menu" />
+
+</menu>
