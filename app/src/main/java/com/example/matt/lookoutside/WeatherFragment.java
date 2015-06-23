@@ -60,7 +60,7 @@ public class WeatherFragment extends Fragment {
         weatherapi.getWeatherByCoord(lat, lon, "imperial", new Callback<WeatherModel>() {
             @Override
             public void success(WeatherModel weathermodel, Response response) {
-                currentLocation = weathermodel.getName();
+                ((MainActivity) getActivity()).mCurrentLocation = weathermodel.getName();
             }
             @Override
             public void failure(RetrofitError error) {
@@ -130,9 +130,9 @@ public class WeatherFragment extends Fragment {
 
         resetViews();
 
-        if (((MainActivity) getActivity()).mNumCitiesAdded == 0) {
+        if (((MainActivity) getActivity()).mNumCitiesAdded == 1) {
             determineLocationName();
-            retrieveWeather(currentLocation);
+            retrieveWeather(((MainActivity) getActivity()).mCurrentLocation);
         } else {
             //TODO: retrieveWeather(city from bundle);
         }

@@ -4,9 +4,18 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context="com.example.matt.lookoutside.ViewCitiesActivity">
+    tools:context="com.example.matt.myweatherapp.ViewCities">
 
-    <TextView android:text="@string/hello_world" android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+    <TextView android:id="@+id/my_locations"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="My Locations"
+        android:textStyle="bold"
+        android:textSize="20sp" />
+
+    <ListView android:id="@+id/my_locations_listview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/my_locations"/>
 
 </RelativeLayout>

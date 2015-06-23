@@ -1,39 +1,39 @@
 package com.example.matt.lookoutside;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.location.Address;
-import android.location.Criteria;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+
+import io.realm.Realm;
+import io.realm.RealmResults;
 
 
 public class MainActivity extends ActionBarActivity {
     protected String mLatitude;
     protected String mLongitude;
     protected String mCurrentCity;
-    protected int mNumCitiesAdded = 0;
+    protected String mNextCity;
+    protected int mNumCitiesAdded = 1;
+    protected String mCurrentLocation;
     public boolean mFirstFragment = true;
 
     private static final int MAX_NUM_PAGES = 5;
@@ -41,9 +41,10 @@ public class MainActivity extends ActionBarActivity {
     WeatherFragment defaultFragment;
     GPSTracker gps;
 
-    private ViewPager mPager;
-    private ScreenSlidePagerAdapter mPagerAdapter;
-    private WeatherOnPageChangeListener mWeatherOnPageChangeListener;
+    private ArrayList<String> cities;
+
+    private SmartFragmentStatePagerAdapter adapterViewPager;
+    ViewPager vPager;
 
 
     @Override
@@ -55,7 +56,37 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setupPager();
+        setUpPager();
+
+        getSupportFragmentManager().beginTransaction()
+                .add(R.id.container, new WeatherFragment())
+                .commit();
+
+        cities = new ArrayList<String>();
+        cities.add(0, mCurrentCity);
+    }
+
+    public void setUpPager() {
+        vPager = (ViewPager) findViewById(R.id.pager);
+        adapterViewPager = new MyPagerAdapter(getSupportFragmentManager());
+        vPager.setAdapter(adapterViewPager);
+
+        vPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                Toast.makeText(MainActivity.this, "" + cities.get(position), Toast.LENGTH_SHORT);
+            }
+
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                //
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                //
+            }
+        });
     }
 
     @Override
@@ -84,19 +115,6 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private void setupPager() {
-        mPager = (ViewPager) findViewById(R.id.pager);
-        mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
-        mPager.setAdapter(mPagerAdapter);
-        mWeatherOnPageChangeListener = new WeatherOnPageChangeListener();
-        mPager.setOnPageChangeListener(mWeatherOnPageChangeListener);
-    }
-
-    public void onCityAdded(int aPosition) {
-        mPagerAdapter.addPage(aPosition);
-        mPager.setCurrentItem(mWeatherOnPageChangeListener.getCurrentPage() + 1);
     }
 
     public void refreshInfo() {
@@ -135,7 +153,23 @@ public class MainActivity extends ActionBarActivity {
 
     public void addCity(String aCity) {
         //TODO: Figure out how the hell to do this
+        mNextCity = aCity;
         mNumCitiesAdded++;
+
+        Realm realm = Realm.getInstance(this);
+        RealmResults<Place> results = realm.where(Place.class)
+                                    .contains("city", aCity).findAll();
+        if (results == null) {
+            realm.beginTransaction();
+            Place place = realm.createObject(Place.class);
+            place.setName(aCity);
+            results = realm.where(Place.class).findAll();
+            realm.commitTransaction();
+
+            for (Place p : results) {
+                cities.add(p.getName());
+            }
+        }
     }
 
     public void showPopUpMenu(View aView) {
@@ -144,6 +178,10 @@ public class MainActivity extends ActionBarActivity {
         MenuInflater inflater = popup.getMenuInflater();
         inflater.inflate(R.menu.actions, popup.getMenu());
         popup.show();
+    }
+
+    public String getCity(int position) {
+        return cities.get(position);
     }
 
     public String getCurrentCity() {
@@ -189,45 +227,56 @@ public class MainActivity extends ActionBarActivity {
                 }
             };
 
-    public static class WeatherOnPageChangeListener extends ViewPager.SimpleOnPageChangeListener {
-        private int currentPage;
+    public static class MyPagerAdapter extends SmartFragmentStatePagerAdapter {
 
-        @Override
-        public void onPageSelected(int aPosition) {
-            currentPage = aPosition;
-        }
-
-        public int getCurrentPage() {
-            return currentPage;
-        }
-    }
-
-    private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
-        private ArrayList<WeatherFragment> weatherPages;
-
-        public ScreenSlidePagerAdapter(FragmentManager fm) {
+        public MyPagerAdapter(FragmentManager fm) {
             super(fm);
-            initPages();
-        }
-
-        private void initPages() {
-            weatherPages = new ArrayList<WeatherFragment>();
-            addPage(0);
-        }
-
-        public void addPage(int aPositionID)  {
-            //TODO: add next fragment to swipe view
-        }
-
-        @Override
-        public Fragment getItem(int aPosition) {
-            //TODO: check the mechanics of this method
-            return new WeatherFragment();
         }
 
         @Override
         public int getCount() {
             return MAX_NUM_PAGES;
         }
+
+        @Override
+        public Fragment getItem(int aPos) {
+            //TODO: Return position from arraylist
+            return null;
+        }
+
     }
+
+    public static class SmartFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
+        private SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
+
+        public SmartFragmentStatePagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        public Fragment getItem(int position) {
+            return null;
+        }
+
+        public int getCount() {
+            return MAX_NUM_PAGES;
+        }
+
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+            Fragment fragment = (Fragment) super.instantiateItem(container, position);
+            registeredFragments.put(position, fragment);
+            return fragment;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            registeredFragments.remove(position);
+            super.destroyItem(container, position, object);
+        }
+
+        public Fragment getRegisteredFragment(int position) {
+            return registeredFragments.get(position);
+        }
+    }
+
 }
