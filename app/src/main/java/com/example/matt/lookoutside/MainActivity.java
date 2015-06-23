@@ -5,12 +5,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -43,7 +42,7 @@ public class MainActivity extends ActionBarActivity {
 
     private ArrayList<String> cities;
 
-    private SmartFragmentStatePagerAdapter adapterViewPager;
+    private PagerAdapter adapterViewPager;
     ViewPager vPager;
 
 
@@ -68,25 +67,9 @@ public class MainActivity extends ActionBarActivity {
 
     public void setUpPager() {
         vPager = (ViewPager) findViewById(R.id.pager);
-        adapterViewPager = new MyPagerAdapter(getSupportFragmentManager());
+        adapterViewPager = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         vPager.setAdapter(adapterViewPager);
-
-        vPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageSelected(int position) {
-                Toast.makeText(MainActivity.this, "" + cities.get(position), Toast.LENGTH_SHORT);
-            }
-
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                //
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-                //
-            }
-        });
+        vPager.setPageTransformer(true, new ZoomOutPageTransformer());
     }
 
     @Override
@@ -227,56 +210,50 @@ public class MainActivity extends ActionBarActivity {
                 }
             };
 
-    public static class MyPagerAdapter extends SmartFragmentStatePagerAdapter {
-
-        public MyPagerAdapter(FragmentManager fm) {
+    private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
+        public ScreenSlidePagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
         @Override
-        public int getCount() {
-            return MAX_NUM_PAGES;
-        }
-
-        @Override
-        public Fragment getItem(int aPos) {
-            //TODO: Return position from arraylist
-            return null;
-        }
-
-    }
-
-    public static class SmartFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
-        private SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
-
-        public SmartFragmentStatePagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
         public Fragment getItem(int position) {
-            return null;
+            return new WeatherFragment();
         }
 
+        @Override
         public int getCount() {
             return MAX_NUM_PAGES;
         }
-
-        @Override
-        public Object instantiateItem(ViewGroup container, int position) {
-            Fragment fragment = (Fragment) super.instantiateItem(container, position);
-            registeredFragments.put(position, fragment);
-            return fragment;
-        }
-
-        @Override
-        public void destroyItem(ViewGroup container, int position, Object object) {
-            registeredFragments.remove(position);
-            super.destroyItem(container, position, object);
-        }
-
-        public Fragment getRegisteredFragment(int position) {
-            return registeredFragments.get(position);
-        }
     }
 
+    public class ZoomOutPageTransformer implements ViewPager.PageTransformer {
+        private static final float MIN_SCALE = 0.85f;
+        private static final float MIN_ALPHA = 0.5f;
+
+        public void transformPage(View view, float position) {
+            int pageWidth = view.getWidth();
+            int pageHeight = view.getHeight();
+
+            if (position < -1) {
+                view.setAlpha(0);
+            } else if (position <= 1) {
+                float scaleFactor = Math.max(MIN_SCALE, 1 - Math.abs(position));
+                float vertMargin = pageHeight * (1 - scaleFactor) / 2;
+                float horzMargin = pageWidth * (1 - scaleFactor) / 2;
+                if (position < 0) {
+                    view.setTranslationX(horzMargin - vertMargin / 2);
+                } else {
+                    view.setTranslationX(-horzMargin + vertMargin / 2);
+                }
+
+                view.setScaleX(scaleFactor);
+                view.setScaleY(scaleFactor);
+
+                view.setAlpha(MIN_ALPHA +
+                        (scaleFactor - MIN_SCALE) / (1 - MIN_SCALE) * (1 - MIN_ALPHA));
+            } else {
+                view.setAlpha(0);
+            }
+        }
+    }
 }
