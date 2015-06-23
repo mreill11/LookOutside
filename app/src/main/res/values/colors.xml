@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="color1" type="color">#ff056091</item>
+    <item name="color2" type="color">#ff733991</item>
+    <item name="color3" type="color">#ff77910c</item>
+    <item name="color4" type="color">#ff1e916a</item>
+    <item name="color5" type="color">#ff91575c</item>
 </resources>

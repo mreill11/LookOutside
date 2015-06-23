@@ -49,8 +49,6 @@ public class WeatherFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        restAdapter = new RestAdapter.Builder().setEndpoint(API).build();
-        weatherapi = restAdapter.create(WeatherAPI.class);
     }
 
     public void determineLocationName() {
@@ -62,6 +60,7 @@ public class WeatherFragment extends Fragment {
             public void success(WeatherModel weathermodel, Response response) {
                 ((MainActivity) getActivity()).mCurrentLocation = weathermodel.getName();
             }
+
             @Override
             public void failure(RetrofitError error) {
                 Log.i("TEST", error.getMessage());
@@ -70,10 +69,17 @@ public class WeatherFragment extends Fragment {
     }
 
     public void retrieveWeather(String aCity) {
+        restAdapter = new RestAdapter.Builder().setEndpoint(API).build();
+        weatherapi = restAdapter.create(WeatherAPI.class);
+
         weatherapi.getWeatherByCity(aCity, "imperial", new Callback<WeatherModel>() {
             @Override
             public void success(WeatherModel weathermodel, Response response) {
-                fillViews(weathermodel);
+                if (weathermodel.getClouds() != null) {
+                    fillViews(weathermodel);
+                } else {
+                    location.setText("Didn't work");
+                }
             }
 
             @Override
@@ -84,30 +90,30 @@ public class WeatherFragment extends Fragment {
     }
 
     public void fillViews(WeatherModel weathermodel) {
-        long rise = weathermodel.sys.getSunrise() * 1000;
-        long set = weathermodel.sys.getSunset() * 1000;
-        currentTime = System.currentTimeMillis();
-        timeUpdated = weathermodel.getDt() * 1000;
-        location.setText(weathermodel.getName());
-        date.setText(monthNameFormatter(currentTime));
-        temp.setText(weathermodel.main.getTemp().substring(0, 2) + "°F");
-        lastUpdated.setText("Last Updated: " + hoursMinutesFormatter(convertTime(timeUpdated)));
+            long rise = weathermodel.sys.getSunrise() * 1000;
+            long set = weathermodel.sys.getSunset() * 1000;
+            currentTime = System.currentTimeMillis();
+            timeUpdated = weathermodel.getDt() * 1000;
+            location.setText(weathermodel.getName());
+            date.setText(monthNameFormatter(currentTime));
+            temp.setText(weathermodel.main.getTemp().substring(0, 2) + "°F");
+            lastUpdated.setText("Last Updated: " + hoursMinutesFormatter(convertTime(timeUpdated)));
 
-        determineIfDayTime(rise, set);
+            determineIfDayTime(rise, set);
 
-        if (dayTime)
-            sunRiseSet.setText("Sunset: " + hoursMinutesFormatter(convertTime(set)));
-        else
-            sunRiseSet.setText("Sunrise: " + hoursMinutesFormatter(convertTime(rise)));
+            if (dayTime)
+                sunRiseSet.setText("Sunset: " + hoursMinutesFormatter(convertTime(set)));
+            else
+                sunRiseSet.setText("Sunrise: " + hoursMinutesFormatter(convertTime(rise)));
 
-        String id = weathermodel.weather.get(0).id;
-        int weatherType = Integer.parseInt(id);
-        String type = setWeatherType(weatherType);
-        description.setText(weatherType);
-        drawable = (SkyconsDrawable) IconsUtil.getDrawable(type);
-        icon.setImageDrawable(drawable);
-        if (drawable != null)
-            drawable.start();
+            String id = weathermodel.weather.get(0).id;
+            int weatherType = Integer.parseInt(id);
+            String type = setWeatherType(weatherType);
+            description.setText(weatherType);
+            drawable = (SkyconsDrawable) IconsUtil.getDrawable(type);
+            icon.setImageDrawable(drawable);
+            if (drawable != null)
+                drawable.start();
     }
 
     public void determineIfDayTime(long aRise, long aSet) {
@@ -128,7 +134,28 @@ public class WeatherFragment extends Fragment {
         lastUpdated = (TextView) rootView.findViewById(R.id.last_updated_textview);
         icon = (ImageView) rootView.findViewById(R.id.weather_icon_imageview);
 
+        switch (((MainActivity) getActivity()).mNumCitiesAdded) {
+            case 1:
+                rootView.setBackgroundColor(getResources().getColor(R.color.color1));
+                break;
+            case 2:
+                rootView.setBackgroundColor(getResources().getColor(R.color.color2));
+                break;
+            case 3:
+                rootView.setBackgroundColor(getResources().getColor(R.color.color3));
+                break;
+            case 4:
+                rootView.setBackgroundColor(getResources().getColor(R.color.color4));
+                break;
+            case 5:
+                rootView.setBackgroundColor(getResources().getColor(R.color.color5));
+                break;
+            default:
+                break;
+        }
+
         resetViews();
+
 
         if (((MainActivity) getActivity()).mNumCitiesAdded == 1) {
             determineLocationName();

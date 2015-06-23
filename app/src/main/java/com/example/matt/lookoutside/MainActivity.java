@@ -10,21 +10,19 @@ import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.util.SparseArray;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
+
 import android.widget.EditText;
 import android.widget.PopupMenu;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
-
 
 public class MainActivity extends ActionBarActivity {
     protected String mLatitude;
@@ -33,41 +31,36 @@ public class MainActivity extends ActionBarActivity {
     protected String mNextCity;
     protected int mNumCitiesAdded = 1;
     protected String mCurrentLocation;
-    public boolean mFirstFragment = true;
 
     private static final int MAX_NUM_PAGES = 5;
 
-    WeatherFragment defaultFragment;
     GPSTracker gps;
 
     private ArrayList<String> cities;
 
-    private PagerAdapter adapterViewPager;
     ViewPager vPager;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         gps = new GPSTracker(this);
         setLatitude(String.valueOf(gps.getLatitude()));
         setLongitude(String.valueOf(gps.getLongitude()));
-
-        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        setUpPager();
 
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.container, new WeatherFragment())
                 .commit();
 
-        cities = new ArrayList<String>();
+        setUpPager();
+
+        cities = new ArrayList<>();
         cities.add(0, mCurrentCity);
     }
 
     public void setUpPager() {
         vPager = (ViewPager) findViewById(R.id.pager);
-        adapterViewPager = new ScreenSlidePagerAdapter(getSupportFragmentManager());
+        PagerAdapter adapterViewPager = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         vPager.setAdapter(adapterViewPager);
         vPager.setPageTransformer(true, new ZoomOutPageTransformer());
     }
@@ -254,6 +247,7 @@ public class MainActivity extends ActionBarActivity {
             } else {
                 view.setAlpha(0);
             }
+            Log.i("TEST", "Transforming Page");
         }
     }
 }
