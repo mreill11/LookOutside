@@ -19,10 +19,17 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 
+import com.example.matt.lookoutside.API.WeatherAPI;
+import com.example.matt.lookoutside.model.WeatherModel;
+
 import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import retrofit.Callback;
+import retrofit.RestAdapter;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 
 public class MainActivity extends ActionBarActivity {
     protected String mLatitude;
@@ -31,26 +38,31 @@ public class MainActivity extends ActionBarActivity {
     protected String mNextCity;
     protected int mNumCitiesAdded = 1;
     protected String mCurrentLocation;
+    String API = "http://api.openweathermap.org/data/2.5";
 
     private static final int MAX_NUM_PAGES = 5;
-
-    GPSTracker gps;
-
     private ArrayList<String> cities;
 
+    GPSTracker gps;
     ViewPager vPager;
+    Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         gps = new GPSTracker(this);
         setLatitude(String.valueOf(gps.getLatitude()));
         setLongitude(String.valueOf(gps.getLongitude()));
+        determineLocationName();
+        mCurrentCity = mCurrentLocation;
+
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.container, new WeatherFragment())
                 .commit();
+
+        refreshInfo();
 
         setUpPager();
 
@@ -63,6 +75,23 @@ public class MainActivity extends ActionBarActivity {
         PagerAdapter adapterViewPager = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         vPager.setAdapter(adapterViewPager);
         vPager.setPageTransformer(true, new ZoomOutPageTransformer());
+    }
+
+    public void determineLocationName() {
+        RestAdapter restAdapter = new RestAdapter.Builder().setEndpoint(API).build();
+        WeatherAPI weatherapi = restAdapter.create(WeatherAPI.class);
+
+        weatherapi.getWeatherByCoord(mLatitude, mLongitude, "imperial", new Callback<WeatherModel>() {
+            @Override
+            public void success(WeatherModel weathermodel, Response response) {
+                mCurrentLocation = weathermodel.getName();
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                Log.i("TEST", error.getMessage());
+            }
+        });
     }
 
     @Override
@@ -129,23 +158,29 @@ public class MainActivity extends ActionBarActivity {
 
     public void addCity(String aCity) {
         //TODO: Figure out how the hell to do this
-        mNextCity = aCity;
-        mNumCitiesAdded++;
 
-        Realm realm = Realm.getInstance(this);
-        RealmResults<Place> results = realm.where(Place.class)
-                                    .contains("city", aCity).findAll();
-        if (results == null) {
+        mNumCitiesAdded++;
+        RealmResults<Place> results;
+
+        try {
+            realm = Realm.getInstance(this);
+            results = realm.where(Place.class)
+                    .contains("city", aCity).findAll();
+        } catch (IllegalArgumentException e) {
+            Log.i("TEST", e.toString());
             realm.beginTransaction();
             Place place = realm.createObject(Place.class);
             place.setName(aCity);
             results = realm.where(Place.class).findAll();
             realm.commitTransaction();
 
+            mNextCity = aCity;
+
             for (Place p : results) {
                 cities.add(p.getName());
             }
         }
+
     }
 
     public void showPopUpMenu(View aView) {
@@ -210,7 +245,12 @@ public class MainActivity extends ActionBarActivity {
 
         @Override
         public Fragment getItem(int position) {
-            return new WeatherFragment();
+            switch (position) {
+                case 0: return WeatherFragment.newInstance(mCurrentLocation);
+                case 1: return WeatherFragment.newInstance("Reno");
+                default:
+                    return WeatherFragment.newInstance("Las Vegas");
+            }
         }
 
         @Override
@@ -247,7 +287,7 @@ public class MainActivity extends ActionBarActivity {
             } else {
                 view.setAlpha(0);
             }
-            Log.i("TEST", "Transforming Page");
+            Log.i("TEST", "Animating some shit");
         }
     }
 }

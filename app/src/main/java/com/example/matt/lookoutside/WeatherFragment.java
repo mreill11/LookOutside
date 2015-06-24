@@ -34,9 +34,7 @@ public class WeatherFragment extends Fragment {
     ImageView icon;
 
     String API = "http://api.openweathermap.org/data/2.5";
-    String defaultCity = "";
     String weatherDescription = "";
-    String currentLocation = "";
 
     long currentTime;
     long timeUpdated;
@@ -49,23 +47,6 @@ public class WeatherFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
-
-    public void determineLocationName() {
-        String lat = ((MainActivity) getActivity()).getLatitude();
-        String lon = ((MainActivity) getActivity()).getLongitude();
-
-        weatherapi.getWeatherByCoord(lat, lon, "imperial", new Callback<WeatherModel>() {
-            @Override
-            public void success(WeatherModel weathermodel, Response response) {
-                ((MainActivity) getActivity()).mCurrentLocation = weathermodel.getName();
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                Log.i("TEST", error.getMessage());
-            }
-        });
     }
 
     public void retrieveWeather(String aCity) {
@@ -109,7 +90,7 @@ public class WeatherFragment extends Fragment {
             String id = weathermodel.weather.get(0).id;
             int weatherType = Integer.parseInt(id);
             String type = setWeatherType(weatherType);
-            description.setText(weatherType);
+            description.setText(weatherDescription);
             drawable = (SkyconsDrawable) IconsUtil.getDrawable(type);
             icon.setImageDrawable(drawable);
             if (drawable != null)
@@ -156,13 +137,9 @@ public class WeatherFragment extends Fragment {
 
         resetViews();
 
+        retrieveWeather(((MainActivity) getActivity()).mCurrentLocation);
 
-        if (((MainActivity) getActivity()).mNumCitiesAdded == 1) {
-            determineLocationName();
-            retrieveWeather(((MainActivity) getActivity()).mCurrentLocation);
-        } else {
-            //TODO: retrieveWeather(city from bundle);
-        }
+        //TODO: retrieveWeather(city from bundle);
 
         return rootView;
     }
@@ -262,5 +239,14 @@ public class WeatherFragment extends Fragment {
         Date date = new Date(time);
         Format format = new SimpleDateFormat("EEEE, MMMM d", Locale.US);
         return format.format(date);
+    }
+
+    public static WeatherFragment newInstance(String city) {
+        WeatherFragment fragment = new WeatherFragment();
+        Bundle b = new Bundle();
+        b.putString("city", city);
+
+        fragment.setArguments(b);
+        return fragment;
     }
 }
