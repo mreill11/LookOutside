@@ -3,11 +3,6 @@ package com.example.matt.lookoutside;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +13,7 @@ import android.view.View;
 
 import android.widget.EditText;
 import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 
 import com.example.matt.lookoutside.API.WeatherAPI;
 import com.example.matt.lookoutside.model.WeatherModel;
@@ -40,41 +36,43 @@ public class MainActivity extends ActionBarActivity {
     protected String mCurrentLocation;
     String API = "http://api.openweathermap.org/data/2.5";
 
-    private static final int MAX_NUM_PAGES = 5;
     private ArrayList<String> cities;
 
     GPSTracker gps;
-    ViewPager vPager;
     Realm realm;
+    private ProgressBar spinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        gps = new GPSTracker(this);
-        setLatitude(String.valueOf(gps.getLatitude()));
-        setLongitude(String.valueOf(gps.getLongitude()));
-        determineLocationName();
-        mCurrentCity = mCurrentLocation;
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.i("TEST", "super.onCreate, setContentView");
+
+        spinner = (ProgressBar) findViewById(R.id.progressBar);
+        spinner.setVisibility(View.VISIBLE);
+
+        Thread location = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                    gps = new GPSTracker(MainActivity.this);
+                    MainActivity.this.setLatitude(String.valueOf(gps.getLatitude()));
+                    MainActivity.this.setLongitude(String.valueOf(gps.getLongitude()));
+                    determineLocationName();
+                    mCurrentCity = mCurrentLocation;
+                    Log.i("TEST", "Location determined: " + mCurrentLocation);
+                    MainActivity.this.spinner.setVisibility(View.GONE);
+            }
+        });
+        location.start();
 
         getSupportFragmentManager().beginTransaction()
                 .add(R.id.container, new WeatherFragment())
                 .commit();
-
-        refreshInfo();
-
-        setUpPager();
+        Log.i("TEST", "Fragment Manager started");
 
         cities = new ArrayList<>();
         cities.add(0, mCurrentCity);
-    }
-
-    public void setUpPager() {
-        vPager = (ViewPager) findViewById(R.id.pager);
-        PagerAdapter adapterViewPager = new ScreenSlidePagerAdapter(getSupportFragmentManager());
-        vPager.setAdapter(adapterViewPager);
-        vPager.setPageTransformer(true, new ZoomOutPageTransformer());
     }
 
     public void determineLocationName() {
@@ -84,6 +82,7 @@ public class MainActivity extends ActionBarActivity {
         weatherapi.getWeatherByCoord(mLatitude, mLongitude, "imperial", new Callback<WeatherModel>() {
             @Override
             public void success(WeatherModel weathermodel, Response response) {
+                Log.i("TEST", weathermodel.toString());
                 mCurrentLocation = weathermodel.getName();
             }
 
@@ -208,7 +207,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void setLatitude(String aLatitude) {
-        this.mLatitude = aLatitude;
+        MainActivity.this.mLatitude = aLatitude;
     }
 
     public String getLongitude() {
@@ -216,7 +215,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void setLongitude(String aLongitude) {
-        this.mLongitude = aLongitude;
+        MainActivity.this.mLongitude = aLongitude;
     }
 
     private PopupMenu.OnMenuItemClickListener popupListener = new
@@ -238,56 +237,4 @@ public class MainActivity extends ActionBarActivity {
                 }
             };
 
-    private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
-        public ScreenSlidePagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            switch (position) {
-                case 0: return WeatherFragment.newInstance(mCurrentLocation);
-                case 1: return WeatherFragment.newInstance("Reno");
-                default:
-                    return WeatherFragment.newInstance("Las Vegas");
-            }
-        }
-
-        @Override
-        public int getCount() {
-            return MAX_NUM_PAGES;
-        }
-    }
-
-    public class ZoomOutPageTransformer implements ViewPager.PageTransformer {
-        private static final float MIN_SCALE = 0.85f;
-        private static final float MIN_ALPHA = 0.5f;
-
-        public void transformPage(View view, float position) {
-            int pageWidth = view.getWidth();
-            int pageHeight = view.getHeight();
-
-            if (position < -1) {
-                view.setAlpha(0);
-            } else if (position <= 1) {
-                float scaleFactor = Math.max(MIN_SCALE, 1 - Math.abs(position));
-                float vertMargin = pageHeight * (1 - scaleFactor) / 2;
-                float horzMargin = pageWidth * (1 - scaleFactor) / 2;
-                if (position < 0) {
-                    view.setTranslationX(horzMargin - vertMargin / 2);
-                } else {
-                    view.setTranslationX(-horzMargin + vertMargin / 2);
-                }
-
-                view.setScaleX(scaleFactor);
-                view.setScaleY(scaleFactor);
-
-                view.setAlpha(MIN_ALPHA +
-                        (scaleFactor - MIN_SCALE) / (1 - MIN_SCALE) * (1 - MIN_ALPHA));
-            } else {
-                view.setAlpha(0);
-            }
-            Log.i("TEST", "Animating some shit");
-        }
-    }
 }

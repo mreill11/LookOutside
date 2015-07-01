@@ -39,6 +39,7 @@ public class WeatherFragment extends Fragment {
     long currentTime;
     long timeUpdated;
     boolean dayTime = false;
+    int numAdded;
 
     SkyconsDrawable drawable;
     RestAdapter restAdapter;
@@ -47,16 +48,19 @@ public class WeatherFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i("TEST", "Fragment onCreate()");
     }
 
     public void retrieveWeather(String aCity) {
         restAdapter = new RestAdapter.Builder().setEndpoint(API).build();
         weatherapi = restAdapter.create(WeatherAPI.class);
 
+        numAdded = ((MainActivity) getActivity()).mNumCitiesAdded++;
+
         weatherapi.getWeatherByCity(aCity, "imperial", new Callback<WeatherModel>() {
             @Override
             public void success(WeatherModel weathermodel, Response response) {
-                if (weathermodel.getClouds() != null) {
+                if (weathermodel.getName() != null) {
                     fillViews(weathermodel);
                 } else {
                     location.setText("Didn't work");
@@ -115,7 +119,9 @@ public class WeatherFragment extends Fragment {
         lastUpdated = (TextView) rootView.findViewById(R.id.last_updated_textview);
         icon = (ImageView) rootView.findViewById(R.id.weather_icon_imageview);
 
-        switch (((MainActivity) getActivity()).mNumCitiesAdded) {
+        Log.i("TEST", "Fragment View Created");
+
+        switch (numAdded) {
             case 1:
                 rootView.setBackgroundColor(getResources().getColor(R.color.color1));
                 break;
@@ -138,7 +144,7 @@ public class WeatherFragment extends Fragment {
         resetViews();
 
         retrieveWeather(((MainActivity) getActivity()).mCurrentLocation);
-
+        Log.i("TEST", "Fragment weather retrieved");
         //TODO: retrieveWeather(city from bundle);
 
         return rootView;
