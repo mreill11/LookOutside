@@ -3,9 +3,11 @@ package com.example.matt.lookoutside;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -13,34 +15,20 @@ import android.view.View;
 
 import android.widget.EditText;
 import android.widget.PopupMenu;
-import android.widget.ProgressBar;
-
-import com.example.matt.lookoutside.API.WeatherAPI;
-import com.example.matt.lookoutside.model.WeatherModel;
-
-import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity
+                    implements WeatherViewerFragment.OnFragmentInteractionListener {
+
     protected String mLatitude;
     protected String mLongitude;
     protected String mCurrentCity;
     protected String mNextCity;
     protected int mNumCitiesAdded = 1;
     protected String mCurrentLocation;
-    String API = "http://api.openweathermap.org/data/2.5";
-
-    private ArrayList<String> cities;
-
-    GPSTracker gps;
     Realm realm;
-    private ProgressBar spinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,48 +37,10 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
         Log.i("TEST", "super.onCreate, setContentView");
 
-        spinner = (ProgressBar) findViewById(R.id.progressBar);
-        spinner.setVisibility(View.VISIBLE);
-
-        Thread location = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                    gps = new GPSTracker(MainActivity.this);
-                    MainActivity.this.setLatitude(String.valueOf(gps.getLatitude()));
-                    MainActivity.this.setLongitude(String.valueOf(gps.getLongitude()));
-                    determineLocationName();
-                    mCurrentCity = mCurrentLocation;
-                    Log.i("TEST", "Location determined: " + mCurrentLocation);
-                    MainActivity.this.spinner.setVisibility(View.GONE);
-            }
-        });
-        location.start();
-
-        getSupportFragmentManager().beginTransaction()
-                .add(R.id.container, new WeatherFragment())
+        getFragmentManager().beginTransaction()
+                .replace(R.id.container, new WeatherViewerFragment())
                 .commit();
         Log.i("TEST", "Fragment Manager started");
-
-        cities = new ArrayList<>();
-        cities.add(0, mCurrentCity);
-    }
-
-    public void determineLocationName() {
-        RestAdapter restAdapter = new RestAdapter.Builder().setEndpoint(API).build();
-        WeatherAPI weatherapi = restAdapter.create(WeatherAPI.class);
-
-        weatherapi.getWeatherByCoord(mLatitude, mLongitude, "imperial", new Callback<WeatherModel>() {
-            @Override
-            public void success(WeatherModel weathermodel, Response response) {
-                Log.i("TEST", weathermodel.toString());
-                mCurrentLocation = weathermodel.getName();
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                Log.i("TEST", error.getMessage());
-            }
-        });
     }
 
     @Override
@@ -122,13 +72,26 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void refreshInfo() {
-        WeatherFragment fragment = new WeatherFragment();
+        /**
+        WeatherViewerFragment fragment = new WeatherViewerFragment();
         Bundle bundle = new Bundle();
         bundle.putString("city", mCurrentCity);
         fragment.setArguments(bundle);
-        getSupportFragmentManager().beginTransaction()
+        getFragmentManager().beginTransaction()
                 .replace(R.id.container, fragment, "HI")
                 .commit();
+         **/
+
+        WeatherViewerFragment fragment = (WeatherViewerFragment) getFragmentManager().findFragmentById(R.id.container);
+        fragment.refresh();
+    }
+
+    public void addCityToRealm(String aCity) {
+        realm = realm.getInstance(this);
+        realm.beginTransaction();
+        Place place = realm.createObject(Place.class);
+        place.setName(aCity);
+        realm.commitTransaction();
     }
 
     public void displayAddCityDialog() {
@@ -159,7 +122,13 @@ public class MainActivity extends ActionBarActivity {
         //TODO: Figure out how the hell to do this
 
         mNumCitiesAdded++;
-        RealmResults<Place> results;
+
+        WeatherViewerFragment fragment = (WeatherViewerFragment) getFragmentManager().findFragmentById(R.id.container);
+        fragment.resetViews();
+        fragment.setActiveCity(aCity);
+        fragment.retrieveWeather(aCity);
+
+        /**
 
         try {
             realm = Realm.getInstance(this);
@@ -174,24 +143,16 @@ public class MainActivity extends ActionBarActivity {
             realm.commitTransaction();
 
             mNextCity = aCity;
-
-            for (Place p : results) {
-                cities.add(p.getName());
-            }
         }
-
+         **/
     }
 
     public void showPopUpMenu(View aView) {
-        PopupMenu popup = new PopupMenu(this, aView);
+        PopupMenu popup = new PopupMenu(this, aView, Gravity.RIGHT);
         popup.setOnMenuItemClickListener(popupListener);
         MenuInflater inflater = popup.getMenuInflater();
         inflater.inflate(R.menu.actions, popup.getMenu());
         popup.show();
-    }
-
-    public String getCity(int position) {
-        return cities.get(position);
     }
 
     public String getCurrentCity() {
@@ -236,5 +197,7 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }
             };
+
+    public void onFragmentInteraction(Uri uri) {}
 
 }

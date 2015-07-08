@@ -11,19 +11,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleLarge"
-        android:progressDrawable="@drawable/circular_progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center" />
-
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/fragment"
-        android:name="com.example.matt.lookoutside.WeatherFragment"
-        tools:layout="@layout/fragment_weather"
+        android:name="com.example.matt.lookoutside.WeatherViewerFragment"
+        tools:layout="@layout/fragment_weather_viewer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
