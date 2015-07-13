@@ -1,7 +1,9 @@
 package com.example.matt.lookoutside;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -35,15 +37,22 @@ public class ViewCitiesActivity extends ActionBarActivity {
         listView = (ListView) findViewById(R.id.my_locations_listview);
         locationList = new ArrayList();
 
-        Realm realm = Realm.getInstance(this);
+        /** Realm realm = Realm.getInstance(this);
         RealmQuery<Place> query = realm.where(Place.class);
         RealmResults<Place> results = query.findAll();
 
         for (Place p : results) {
             locationList.add(p.getName());
+        } **/
+
+        WeatherViewerFragment fragment = (WeatherViewerFragment) getFragmentManager().findFragmentById(R.id.container);
+        ArrayList<Place> locations = fragment.getLocations();
+
+        for (Place p : locations) {
+            locationList.add(p.getName());
         }
 
-        listAdapter = new ArrayAdapter<String>(this, R.layout.row, locationList);
+        listAdapter = new ArrayAdapter<>(this, R.layout.row, locationList);
         listView.setAdapter(listAdapter);
 
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {

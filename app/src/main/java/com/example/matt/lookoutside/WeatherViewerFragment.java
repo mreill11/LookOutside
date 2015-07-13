@@ -1,10 +1,15 @@
 package com.example.matt.lookoutside;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.DialogFragment;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,9 +20,13 @@ import android.widget.TextView;
 
 import com.example.matt.lookoutside.API.WeatherAPI;
 import com.example.matt.lookoutside.model.WeatherModel;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -49,6 +58,7 @@ public class WeatherViewerFragment extends Fragment {
     private String longitude;
     private String currentLocation;
     private String activeCity;
+    static final int MAX_CITIES = 4;
 
     private OnFragmentInteractionListener mListener;
 
@@ -67,7 +77,7 @@ public class WeatherViewerFragment extends Fragment {
     long currentTime;
     long timeUpdated;
     boolean dayTime = false;
-    int numAdded;
+    int numAdded = 1;
 
     SkyconsDrawable drawable;
     RestAdapter restAdapter;
@@ -75,6 +85,7 @@ public class WeatherViewerFragment extends Fragment {
     GPSTracker gps;
     ProgressBar bar;
     Realm realm;
+    ArrayList<Place> locations;
 
     /**
      * Use this factory method to create a new instance of
@@ -101,6 +112,7 @@ public class WeatherViewerFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        locations = new ArrayList<>();
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -112,6 +124,7 @@ public class WeatherViewerFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
 
         ((MainActivity) getActivity()).mCurrentCity = currentLocation;
+        //((MainActivity) getActivity()).addCityToRealm(currentLocation);
 
         resetViews();
         retrieveWeather(currentLocation);
@@ -134,13 +147,6 @@ public class WeatherViewerFragment extends Fragment {
         return rootView;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -159,6 +165,7 @@ public class WeatherViewerFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        saveArray();
     }
 
     /**
@@ -189,6 +196,10 @@ public class WeatherViewerFragment extends Fragment {
             public void success(WeatherModel weathermodel, Response response) {
                 currentLocation = weathermodel.getName();
                 activeCity = currentLocation;
+                Place currLoc = new Place();
+                currLoc.setName(currentLocation);
+                numAdded++;
+                locations.add(0, currLoc);
             }
 
             @Override
@@ -207,6 +218,17 @@ public class WeatherViewerFragment extends Fragment {
             public void success(WeatherModel weathermodel, Response response) {
                 if (weathermodel.getName() != null) {
                     fillViews(weathermodel);
+                    if (determineIfNewCity(weathermodel.getName())) {
+                        Place newCity = new Place();
+                        newCity.setName(weathermodel.getName());
+                        if (determineIfNewCity(newCity.getName()) && locations.size() <= MAX_CITIES) {
+                            locations.add(newCity);
+                        } else {
+                            locations.set(4, newCity);
+                        }
+                        for (Place p : locations)
+                            Log.i("TEST", p.getName());
+                    }
                     //activeCity = weathermodel.getName();
                 } else {
                     bar.setVisibility(View.VISIBLE);
@@ -219,7 +241,6 @@ public class WeatherViewerFragment extends Fragment {
                         }
                     }, 700);
                 }
-
             }
 
             @Override
@@ -227,6 +248,39 @@ public class WeatherViewerFragment extends Fragment {
                 Log.i("TEST", error.getMessage());
             }
         });
+    }
+
+    public boolean determineIfNewCity(String aCity) {
+        for (Place p : locations) {
+            if (aCity.toLowerCase().equals(p.getName().toLowerCase()))
+                return false;
+        }
+        return true;
+    }
+
+    public void saveArray() {
+        Context context = getActivity();
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sp.edit();
+        Gson gson = new Gson();
+
+        String json = gson.toJson(locations);
+
+        editor.putString("LIST", json);
+        editor.commit();
+    }
+
+    public ArrayList<Place> loadArray() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        Gson gson = new Gson();
+        String json = sp.getString("LIST", null);
+        Type type = new TypeToken<ArrayList<Place>>() {}.getType();
+        ArrayList<Place> arrayList = gson.fromJson(json, type);
+        return arrayList;
+    }
+
+    public ArrayList<Place> getLocations() {
+        return locations;
     }
 
     public void fillViews(WeatherModel weathermodel) {

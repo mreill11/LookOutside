@@ -25,7 +25,6 @@ public class MainActivity extends ActionBarActivity
     protected String mLatitude;
     protected String mLongitude;
     protected String mCurrentCity;
-    protected String mNextCity;
     protected int mNumCitiesAdded = 1;
     protected String mCurrentLocation;
     Realm realm;
@@ -72,17 +71,8 @@ public class MainActivity extends ActionBarActivity
     }
 
     public void refreshInfo() {
-        /**
-        WeatherViewerFragment fragment = new WeatherViewerFragment();
-        Bundle bundle = new Bundle();
-        bundle.putString("city", mCurrentCity);
-        fragment.setArguments(bundle);
-        getFragmentManager().beginTransaction()
-                .replace(R.id.container, fragment, "HI")
-                .commit();
-         **/
-
-        WeatherViewerFragment fragment = (WeatherViewerFragment) getFragmentManager().findFragmentById(R.id.container);
+        WeatherViewerFragment fragment =
+                (WeatherViewerFragment) getFragmentManager().findFragmentById(R.id.container);
         fragment.refresh();
     }
 
@@ -127,24 +117,6 @@ public class MainActivity extends ActionBarActivity
         fragment.resetViews();
         fragment.setActiveCity(aCity);
         fragment.retrieveWeather(aCity);
-
-        /**
-
-        try {
-            realm = Realm.getInstance(this);
-            results = realm.where(Place.class)
-                    .contains("city", aCity).findAll();
-        } catch (IllegalArgumentException e) {
-            Log.i("TEST", e.toString());
-            realm.beginTransaction();
-            Place place = realm.createObject(Place.class);
-            place.setName(aCity);
-            results = realm.where(Place.class).findAll();
-            realm.commitTransaction();
-
-            mNextCity = aCity;
-        }
-         **/
     }
 
     public void showPopUpMenu(View aView) {
